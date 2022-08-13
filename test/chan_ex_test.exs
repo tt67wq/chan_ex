@@ -2,17 +2,13 @@ defmodule ChanExTest do
   use ExUnit.Case
   doctest ChanEx
 
-  # test "greets the world" do
-  #   assert ChanEx.hello() == :world
-  # end
-
-  test "chan manage1" do
+  setup do
     {:ok, _} = ChanEx.start_link(name: :test)
-    {:ok, q} = ChanEx.get_chan(:test, "q", 5)
+    {:ok, []}
+  end
 
-    Task.start(fn ->
-      ChanEx.push(q, 1)
-    end)
+  test "producer and consumer", _ do
+    {:ok, q} = ChanEx.get_chan(:test, "q", 5)
 
     {:ok, stop} = ChanEx.get_chan(:test, "stop")
     spawn(fn -> producer(q, stop, 1) end)
@@ -34,7 +30,6 @@ defmodule ChanExTest do
   end
 
   defp consumer(q) do
-    IO.puts("[consumer] waiting...")
     item = ChanEx.pop(q)
     IO.puts("[consumer] receive: #{item}")
     consumer(q)

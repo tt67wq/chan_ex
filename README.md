@@ -1,6 +1,11 @@
 # ChanEx
 
-**TODO: Add description**
+**A block chan for elixir**
+
+## ROADMAP
+
+- [ ] docs
+- [ ] unittest
 
 ## Installation
 
