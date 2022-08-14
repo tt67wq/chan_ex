@@ -34,12 +34,23 @@ defmodule ChanEx.BlockChan do
   alias ChanEx.BlockState, as: State
   alias ChanEx.ConstantQueue, as: Queue
 
-  defstruct pid: nil
-  @type t :: %__MODULE__{pid: pid()}
+  @opt_schema [
+    capacity: [
+      type: :non_neg_integer,
+      default: 256,
+      doc: "max number of items can be pushed into the chan before blocked"
+    ],
+    name: [
+      type: :any,
+      default: __MODULE__,
+      doc: "name of block chan"
+    ]
+  ]
 
-  @type on_start :: {:ok, pid} | :ignore | {:error, {:already_started, pid} | term}
-
-  def start_link({n, name}), do: GenServer.start_link(__MODULE__, n, name: name)
+  def start_link(opts) do
+    opts = NimbleOptions.validate!(opts, @opt_schema)
+    GenServer.start_link(__MODULE__, opts[:capacity], name: opts[:name])
+  end
 
   @spec init(any) :: {:ok, ChanEx.BlockState.t()}
   def init(n) do

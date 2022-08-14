@@ -44,7 +44,7 @@ defmodule ChanEx do
   def new_chan(domain, name, capacity \\ @default_chan_capacity) do
     DynamicSupervisor.start_child(
       dynamic_supervisor_name(domain),
-      {ChanEx.BlockChan, {capacity, chan_name(domain, name)}}
+      {ChanEx.BlockChan, capacity: capacity, name: chan_name(domain, name)}
     )
   end
 
