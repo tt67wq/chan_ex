@@ -101,11 +101,25 @@ defmodule ChanEx.BlockChan do
   end
 
   def handle_info({:EXIT, _from, reason}, state) do
+    cleanup(reason, state)
     {:stop, reason, state}
   end
 
-  def terminate(_reason, state) do
+  def terminate(reason, state) do
+    cleanup(reason, state)
     state
+  end
+
+  defp cleanup(_, %State{waiters: w}) do
+    w
+    |> Queue.to_list()
+    |> Enum.each(fn
+      {:pop, pop_waiter} ->
+        send(elem(pop_waiter, 0), :closed)
+
+      {:push, {push_waiter, _}} ->
+        send(elem(push_waiter, 0), :closed)
+    end)
   end
 
   @doc """
@@ -121,6 +135,7 @@ defmodule ChanEx.BlockChan do
       :block ->
         receive do
           :awaken -> :ok
+          :closed -> {:error, :closed}
         end
 
       _ ->
@@ -141,6 +156,7 @@ defmodule ChanEx.BlockChan do
       :block ->
         receive do
           {:awaken, data} -> data
+          :closed -> {:error, :closed}
         end
 
       data ->
