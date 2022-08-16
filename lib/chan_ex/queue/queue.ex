@@ -6,8 +6,6 @@ defmodule ChanEx.QueueImpl do
     @type queue :: ChanEx.QueueImpl.t()
 
     @callback new(keyword()) :: queue()
-    @callback size(queue()) :: non_neg_integer()
-    @callback empty?(queue()) :: boolean()
     @callback insert(queue(), term()) :: queue()
     @callback pop(queue()) :: {:ok, {term(), queue()}} | {:error, any}
   end
