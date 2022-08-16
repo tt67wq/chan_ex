@@ -4,6 +4,7 @@
 
 ## ROADMAP
 
+- [ ] queue behavior & implementations
 - [ ] docs
 - [ ] unittest
 - [ ] benchmark 
