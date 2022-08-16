@@ -1,9 +1,9 @@
-defmodule ChanEx.Queue do
+defmodule ChanEx.QueueImpl do
   @moduledoc false
 
   @type t :: term()
   defmodule Data do
-    @type queue :: ChanEx.Queue.t()
+    @type queue :: ChanEx.QueueImpl.t()
 
     @callback new(keyword()) :: queue()
     @callback size(queue()) :: non_neg_integer()
@@ -13,7 +13,7 @@ defmodule ChanEx.Queue do
   end
 
   defmodule Waiter do
-    @type queue :: ChanEx.Queue.t()
+    @type queue :: ChanEx.QueueImpl.t()
 
     @callback new(keyword()) :: queue()
     @callback empty?(queue()) :: boolean()

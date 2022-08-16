@@ -1,29 +1,33 @@
 defmodule ChanEx.BlockState do
   @moduledoc false
 
-  alias ChanEx.ConstantQueue
-
   @type t :: %__MODULE__{
           capacity: non_neg_integer,
           size: non_neg_integer,
-          queue: ConstantQueue.t(),
+          data: ChanEx.Queue.t(),
+          idata: :atom,
           curr: :idle | :push | :pop,
-          waiters: ConstantQueue.t()
+          waiters: ChanEx.Queue.t(),
+          iwaiter: :atom,
         }
 
   defstruct capacity: 0,
             size: 0,
-            queue: nil,
+            data: nil,
+            idata: nil,
             curr: :idle,
-            waiters: nil
+            waiters: nil,
+            iwaiter: nil
 
-  def new(max),
+  def new(max, dataq, waiterq),
     do: %__MODULE__{
       capacity: max,
       size: 0,
-      queue: ConstantQueue.new(),
+      data: dataq.new(),
+      idata: dataq,
       curr: :idle,
-      waiters: ConstantQueue.new()
+      waiters: waiterq.new(),
+      iwaiter: waiterq
     }
 end
 
@@ -32,7 +36,6 @@ defmodule ChanEx.BlockChan do
   use GenServer
 
   alias ChanEx.BlockState, as: State
-  alias ChanEx.ConstantQueue, as: Queue
 
   @opt_schema [
     capacity: [
@@ -49,28 +52,37 @@ defmodule ChanEx.BlockChan do
 
   def start_link(opts) do
     opts = NimbleOptions.validate!(opts, @opt_schema)
-    GenServer.start_link(__MODULE__, opts[:capacity], name: opts[:name])
+    GenServer.start_link(__MODULE__, opts, name: opts[:name])
   end
 
-  @spec init(any) :: {:ok, ChanEx.BlockState.t()}
-  def init(n) do
+  @spec init(keyword) :: {:ok, ChanEx.BlockState.t()}
+  def init(opts) do
     Process.flag(:trap_exit, true)
-    {:ok, State.new(n)}
+
+    {:ok,
+     State.new(
+       opts[:capacity],
+       Application.get_env(:chan_ex, :data_queue_impl, ChanEx.ConstantQueue),
+       Application.get_env(:chan_ex, :data_queue_impl, ChanEx.ConstantQueue)
+     )}
   end
+
+  defp dataq(s), do: s.idata
+  defp waiterq(s), do: s.iwaiter
 
   # start a list of waiting pushers when the first client tries to push to a full queue
   def handle_call({:push, item}, from, %State{capacity: max, size: n, waiters: w} = s)
       when n >= max do
     {:reply, :block,
-     %{s | size: n + 1, waiters: Queue.insert(w, {:push, {from, item}}), curr: :push}}
+     %{s | size: n + 1, waiters: dataq(s).insert(w, {:push, {from, item}}), curr: :push}}
   end
 
   def handle_call({:push, item}, _, %State{size: 0, curr: :pop, waiters: w} = s) do
-    {:ok, {{:pop, pop_waiter}, nw}} = Queue.pop(w)
+    {:ok, {{:pop, pop_waiter}, nw}} = waiterq(s).pop(w)
     send(elem(pop_waiter, 0), {:awaken, item})
 
     curr =
-      if Queue.empty?(nw) do
+      if waiterq(s).empty?(nw) do
         :idle
       else
         :pop
@@ -79,26 +91,26 @@ defmodule ChanEx.BlockChan do
     {:reply, nil, %{s | waiters: nw, curr: curr}}
   end
 
-  def handle_call({:push, item}, _, %State{queue: q, size: n, curr: :idle} = s) do
-    {:reply, nil, %{s | size: n + 1, queue: Queue.insert(q, item)}}
+  def handle_call({:push, item}, _, %State{data: q, size: n, curr: :idle} = s) do
+    {:reply, nil, %{s | size: n + 1, data: dataq(s).insert(q, item)}}
   end
 
   # start a list of waiting poppers when the first client tries to pop from the empty queue
 
   def handle_call(:pop, from, %State{size: 0, waiters: w} = s) do
-    {:reply, :block, %{s | waiters: Queue.insert(w, {:pop, from}), curr: :pop}}
+    {:reply, :block, %{s | waiters: waiterq(s).insert(w, {:pop, from}), curr: :pop}}
   end
 
-  def handle_call(:pop, _, %State{queue: q, curr: :push, waiters: w, size: n} = s) do
-    {:ok, {item, nq}} = Queue.pop(q)
-    {:ok, {{:push, {push_waiter, wait_item}}, nw}} = Queue.pop(w)
+  def handle_call(:pop, _, %State{data: q, curr: :push, waiters: w, size: n} = s) do
+    {:ok, {item, nq}} = dataq(s).pop(q)
+    {:ok, {{:push, {push_waiter, wait_item}}, nw}} = waiterq(s).pop(w)
     send(elem(push_waiter, 0), :awaken)
-    {:reply, item, %{s | queue: Queue.insert(nq, wait_item), waiters: nw, size: n - 1}}
+    {:reply, item, %{s | data: dataq(s).insert(nq, wait_item), waiters: nw, size: n - 1}}
   end
 
-  def handle_call(:pop, _, %State{queue: q, size: n} = s) do
-    {:ok, {item, nq}} = Queue.pop(q)
-    {:reply, item, %{s | size: n - 1, queue: nq}}
+  def handle_call(:pop, _, %State{data: q, size: n} = s) do
+    {:ok, {item, nq}} = dataq(s).pop(q)
+    {:reply, item, %{s | size: n - 1, data: nq}}
   end
 
   # determine is the queue is empty
@@ -121,9 +133,8 @@ defmodule ChanEx.BlockChan do
     state
   end
 
-  defp cleanup(_, %State{waiters: w}) do
-    w
-    |> Queue.to_list()
+  defp cleanup(_, %State{waiters: w} = s) do
+    waiterq(s).to_list(w)
     |> Enum.each(fn
       {:pop, pop_waiter} ->
         send(elem(pop_waiter, 0), :closed)
