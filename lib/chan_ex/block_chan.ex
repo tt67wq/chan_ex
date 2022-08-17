@@ -205,7 +205,7 @@ defmodule ChanEx.BlockChan do
   `pid` is the process ID of the BlockChan server.
   """
   @spec push_stream(Enumerable.t(), pid) :: nil
-  def push_stream(stream, pid) do
+  def push_stream(pid, stream) do
     spawn_link(fn ->
       Enum.each(stream, &push(pid, &1))
     end)

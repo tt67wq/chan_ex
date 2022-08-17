@@ -51,6 +51,13 @@ defmodule ChanExTest do
       assert :block == GenServer.call(c, {:push, 3}, 5000)
     end
 
+    test "push_stream", %{name: name} do
+      start_supervised!({ChanEx, name: name})
+      {:ok, c} = ChanEx.new_chan(name, "test", 3)
+      assert is_nil(ChanEx.push_stream(c, [1,2,3]))
+
+    end
+
     test "pop", %{name: name} do
       start_supervised!({ChanEx, name: name})
       {:ok, c} = ChanEx.new_chan(name, "test", 2)
