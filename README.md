@@ -1,6 +1,6 @@
 # ChanEx
 
-**A block chan for elixir**
+**A blocking channel in elixir**
 
 ## ROADMAP
 
