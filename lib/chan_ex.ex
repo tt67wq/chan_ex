@@ -48,22 +48,21 @@ defmodule ChanEx do
     )
   end
 
-  @spec lookup_chan(atom(), chan_name_t()) :: nil | {:ok, pid}
-  def lookup_chan(domain, name) do
+  @spec get_chan(atom, atom | binary, any) :: {:error, any} | {:ok, pid}
+  def get_chan(domain, name, capacity \\ @default_chan_capacity) do
+    case lookup_chan(domain, name) do
+      nil -> new_chan(domain, name, capacity)
+      {:ok, pid} -> {:ok, pid}
+    end
+  end
+
+  defp lookup_chan(domain, name) do
     domain
     |> registry_name()
     |> Registry.lookup(name)
     |> case do
       [] -> nil
       [{pid, _}] -> {:ok, pid}
-    end
-  end
-
-  @spec get_chan(atom, atom | binary, any) :: {:error, any} | {:ok, pid}
-  def get_chan(domain, name, capacity \\ @default_chan_capacity) do
-    case lookup_chan(domain, name) do
-      nil -> new_chan(domain, name, capacity)
-      {:ok, pid} -> {:ok, pid}
     end
   end
 
