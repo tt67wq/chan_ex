@@ -79,7 +79,7 @@ defmodule ChanEx.BlockChan do
 
   def handle_call({:push, item}, _, %State{size: 0, curr: :pop, waiters: w} = s) do
     {:ok, {{:pop, pop_waiter}, nw}} = waiterq(s).pop(w)
-    send(elem(pop_waiter, 0), {:awaken, item})
+    notify(pop_waiter, {:awaken, item})
 
     curr =
       if waiterq(s).empty?(nw) do
@@ -104,7 +104,7 @@ defmodule ChanEx.BlockChan do
   def handle_call(:pop, _, %State{data: q, curr: :push, waiters: w, size: n} = s) do
     {:ok, {item, nq}} = dataq(s).pop(q)
     {:ok, {{:push, {push_waiter, wait_item}}, nw}} = waiterq(s).pop(w)
-    send(elem(push_waiter, 0), :awaken)
+    notify(push_waiter, :awaken)
     {:reply, item, %{s | data: dataq(s).insert(nq, wait_item), waiters: nw, size: n - 1}}
   end
 
@@ -138,14 +138,22 @@ defmodule ChanEx.BlockChan do
       waiterq(s).to_list(w),
       fn
         {:pop, pop_waiter} ->
-          send(elem(pop_waiter, 0), :closed)
+          notify(pop_waiter, :closed)
 
         {:push, {push_waiter, _}} ->
-          send(elem(push_waiter, 0), :closed)
+          notify(push_waiter, :closed)
       end,
       max_concurrency: 50
     )
     |> Stream.run()
+  end
+
+  defp notify({pid, _}, msg), do: notify(pid, msg)
+
+  defp notify(pid, msg) do
+    if Process.alive?(pid) do
+      send(pid, msg)
+    end
   end
 
   @doc """
