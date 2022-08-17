@@ -8,7 +8,7 @@ defmodule ChanEx.BlockState do
           idata: :atom,
           curr: :idle | :push | :pop,
           waiters: ChanEx.Queue.t(),
-          iwaiter: :atom,
+          iwaiter: :atom
         }
 
   defstruct capacity: 0,
@@ -134,14 +134,18 @@ defmodule ChanEx.BlockChan do
   end
 
   defp cleanup(_, %State{waiters: w} = s) do
-    waiterq(s).to_list(w)
-    |> Enum.each(fn
-      {:pop, pop_waiter} ->
-        send(elem(pop_waiter, 0), :closed)
+    Task.async_stream(
+      waiterq(s).to_list(w),
+      fn
+        {:pop, pop_waiter} ->
+          send(elem(pop_waiter, 0), :closed)
 
-      {:push, {push_waiter, _}} ->
-        send(elem(push_waiter, 0), :closed)
-    end)
+        {:push, {push_waiter, _}} ->
+          send(elem(push_waiter, 0), :closed)
+      end,
+      max_concurrency: 50
+    )
+    |> Stream.run()
   end
 
   @doc """
