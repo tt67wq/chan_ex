@@ -43,27 +43,20 @@ defmodule ChanExTest do
   end
 
   describe "block queue" do
-    test "push", %{name: name} do
+    test "bpush", %{name: name} do
       start_supervised!({ChanEx, name: name})
       {:ok, c} = ChanEx.new_chan(name, "test", 2)
-      assert :ok == ChanEx.push(c, 1)
-      assert :ok == ChanEx.push(c, 2)
-      assert :block == GenServer.call(c, {:push, 3}, 5000)
+      assert :ok == ChanEx.bpush(c, 1)
+      assert :ok == ChanEx.bpush(c, 2)
+      assert :block == GenServer.call(c, {:bpush, 3}, 5000)
     end
 
-    test "push_stream", %{name: name} do
-      start_supervised!({ChanEx, name: name})
-      {:ok, c} = ChanEx.new_chan(name, "test", 3)
-      assert is_nil(ChanEx.push_stream(c, [1,2,3]))
-
-    end
-
-    test "pop", %{name: name} do
+    test "bpop", %{name: name} do
       start_supervised!({ChanEx, name: name})
       {:ok, c} = ChanEx.new_chan(name, "test", 2)
-      assert :ok == ChanEx.push(c, 1)
-      assert 1 == ChanEx.pop(c)
-      assert :block == GenServer.call(c, :pop, 5000)
+      assert :ok == ChanEx.bpush(c, 1)
+      assert 1 == ChanEx.bpop(c)
+      assert :block == GenServer.call(c, :bpop, 5000)
     end
   end
 end

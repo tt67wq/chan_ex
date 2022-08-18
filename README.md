@@ -2,13 +2,6 @@
 
 **A blocking channel in elixir**
 
-## ROADMAP
-
-- [ ] queue behavior & implementations
-- [ ] docs
-- [ ] unittest
-- [ ] benchmark 
-
 ## Installation
 
 If [available in Hex](https://hex.pm/docs/publish), the package can be installed

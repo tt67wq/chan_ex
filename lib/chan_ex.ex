@@ -69,10 +69,12 @@ defmodule ChanEx do
   defp chan_name(domain, name),
     do: {:via, Registry, {registry_name(domain), name}}
 
+  defdelegate bpush(pid, item, timeout \\ 5000), to: ChanEx.BlockChan
   defdelegate push(pid, item, timeout \\ 5000), to: ChanEx.BlockChan
-  defdelegate push_stream(pid, stream), to: ChanEx.BlockChan
+  defdelegate push!(pid, item, timeout \\ 5000), to: ChanEx.BlockChan
+  defdelegate bpop(pid, timeout \\ 5000), to: ChanEx.BlockChan
   defdelegate pop(pid, timeout \\ 5000), to: ChanEx.BlockChan
-  defdelegate pop_stream(pid), to: ChanEx.BlockChan
+  defdelegate pop!(pid, timeout \\ 5000), to: ChanEx.BlockChan
   defdelegate empty?(pid), to: ChanEx.BlockChan
   defdelegate size(pid), to: ChanEx.BlockChan
   defdelegate close(pid), to: ChanEx.BlockChan
