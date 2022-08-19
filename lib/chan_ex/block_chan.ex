@@ -99,8 +99,11 @@ defmodule ChanEx.BlockChan do
     {:reply, :full, s}
   end
 
-  def handle_call({:push, item}, _, _) do
-    GenServer.call(self(), {:bpush, item})
+  def handle_call({:push, _}, _, %State{capacity: max, size: n} = s) when n >= max,
+    do: {:reply, :full, s}
+
+  def handle_call({:push, item}, from, s) do
+    handle_call({:bpush, item}, from, s)
   end
 
   # start a list of waiting poppers when the first client tries to pop from the empty queue
@@ -121,11 +124,15 @@ defmodule ChanEx.BlockChan do
     {:reply, item, %{s | size: n - 1, data: nq}}
   end
 
+  def handle_call(:pop, _, %State{wait_state: :pop} = s) do
+    {:reply, :empty, s}
+  end
+
   def handle_call(:pop, _, %State{size: 0} = s) do
     {:reply, :empty, s}
   end
 
-  def handle_call(:pop, _, _), do: GenServer.call(self(), :bpop)
+  def handle_call(:pop, from, s), do: handle_call(:bpop, from, s)
 
   # determine is the queue is empty
   def handle_call(:is_empty, _, s) do
