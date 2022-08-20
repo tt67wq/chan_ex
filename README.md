@@ -1,21 +1,34 @@
 # ChanEx
+<!-- MDOC !-->
 
-**A blocking channel in elixir**
+This is a blocking channel implementation in Elixir. When I code in Elixir, I often wondering if there is a queue like *chan* in Go, so I made one.
 
-## Installation
+## Usage
 
-If [available in Hex](https://hex.pm/docs/publish), the package can be installed
-by adding `chan_ex` to your list of dependencies in `mix.exs`:
+In Go, code like this can be seen everywhere:
 
-```elixir
-def deps do
-  [
-    {:chan_ex, "~> 0.1.0"}
-  ]
-end
+```go
+var a chan struct{}
+
+func foo() {
+  fmt.Println("aha!")
+  a <- struct{}{}
+}
+
+func main() {
+  a = make(chan struct{}, 1)
+  go foo()
+  <-a
+}
 ```
 
-Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
-and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
-be found at <https://hexdocs.pm/chan_ex>.
+with *ChanEx*, you can write Elixir code in Go style:
 
+```elixir
+iex> ChanEx.start_link(name: :demo)
+iex> {:ok, chan} = ChanEx.get_chan(:demo, :foo)
+iex> ChanEx.bpush(chan, "ops")
+# pop alter to be running in another process
+iex> ChanEx.bpop(chan)
+ops
+```
