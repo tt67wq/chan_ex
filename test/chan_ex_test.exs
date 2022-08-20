@@ -1,5 +1,5 @@
 defmodule ChanExTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case
   doctest ChanEx
 
   setup do
@@ -57,6 +57,7 @@ defmodule ChanExTest do
       assert :ok == ChanEx.push(c, 1)
       assert :ok == ChanEx.push(c, 2)
       assert {:error, _} = ChanEx.push(c, 3)
+      assert_raise(RuntimeError, fn -> ChanEx.push!(c, 3) end)
     end
 
     test "bpop", %{name: name} do
@@ -65,6 +66,15 @@ defmodule ChanExTest do
       assert :ok == ChanEx.bpush(c, 1)
       assert 1 == ChanEx.bpop(c)
       assert :block == GenServer.call(c, :bpop, 5000)
+    end
+
+    test "pop", %{name: name} do
+      start_supervised!({ChanEx, name: name})
+      {:ok, c} = ChanEx.new_chan(name, "test", 2)
+      assert :ok == ChanEx.push(c, 1)
+      assert 1 == ChanEx.pop(c)
+      assert {:error, :empty} == ChanEx.pop(c)
+      assert_raise(RuntimeError, fn -> ChanEx.pop!(c) end)
     end
   end
 end
