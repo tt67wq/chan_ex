@@ -23,10 +23,10 @@ defmodule ChanEx.BlockState do
     do: %__MODULE__{
       capacity: max,
       size: 0,
-      data: dataq.new(),
+      data: dataq.new([]),
       idata: dataq,
       wait_state: :idle,
-      waiters: waiterq.new(),
+      waiters: waiterq.new([]),
       iwaiter: waiterq
     }
 end
@@ -62,8 +62,8 @@ defmodule ChanEx.BlockChan do
     {:ok,
      State.new(
        opts[:capacity],
-       Application.get_env(:chan_ex, :data_queue_impl, ChanEx.ConstantQueue),
-       Application.get_env(:chan_ex, :data_queue_impl, ChanEx.ConstantQueue)
+       Application.get_env(:chan_ex, :data_queue_impl, ChanEx.ErlangQueue),
+       Application.get_env(:chan_ex, :data_queue_impl, ChanEx.ErlangQueue)
      )}
   end
 
