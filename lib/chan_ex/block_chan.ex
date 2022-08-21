@@ -63,7 +63,7 @@ defmodule ChanEx.BlockChan do
      State.new(
        opts[:capacity],
        Application.get_env(:chan_ex, :data_queue_impl, ChanEx.ErlangQueue),
-       Application.get_env(:chan_ex, :data_queue_impl, ChanEx.ErlangQueue)
+       Application.get_env(:chan_ex, :waiter_queue_impl, ChanEx.ErlangQueue)
      )}
   end
 

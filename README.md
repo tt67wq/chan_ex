@@ -32,3 +32,41 @@ iex> ChanEx.bpush(chan, "ops")
 iex> ChanEx.bpop(chan)
 ops
 ```
+
+## Config
+ChanEx depends on Queue implementation for both data and waiter, you can configure your own queue implentation via:
+
+```elixir
+config :chan_ex, 
+  data_queue_impl: YourQueueImpl,
+  waiter_queue_impl: YourQueueImpl
+```
+
+Your implementation must the obey the follow behavior:
+
+```elixir
+defmodule ChanEx.QueueImpl do
+  @moduledoc false
+
+  @type t :: term()
+  defmodule Data do
+    @type queue :: ChanEx.QueueImpl.t()
+
+    @callback new(keyword()) :: queue()
+    @callback insert(queue(), term()) :: queue()
+    @callback pop(queue()) :: {:ok, {term(), queue()}} | {:error, :empty}
+  end
+
+  defmodule Waiter do
+    @type queue :: ChanEx.QueueImpl.t()
+
+    @callback new(keyword()) :: queue()
+    @callback empty?(queue()) :: boolean()
+    @callback insert(queue(), term()) :: queue()
+    @callback pop(queue()) :: {:ok, {term(), queue()}} | {:error, :empty}
+    @callback to_list(queue()) :: list()
+  end
+end
+
+
+```
