@@ -28,9 +28,10 @@ with *ChanEx*, you can write Elixir code in Go style:
 iex> ChanEx.start_link(name: :demo)
 iex> {:ok, chan} = ChanEx.get_chan(:demo, :foo)
 iex> ChanEx.bpush(chan, "ops")
+:ok
 # pop alter to be running in another process
 iex> ChanEx.bpop(chan)
-ops
+"ops"
 ```
 
 ## Config

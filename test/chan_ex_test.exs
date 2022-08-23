@@ -7,8 +7,12 @@ defmodule ChanExTest do
   end
 
   describe "start_link/1" do
-    test "start_link with name", %{name: name} do
+    test "start_link with atom name", %{name: name} do
       start_supervised!({ChanEx, name: name})
+    end
+
+    test "start_link with string name" do
+      start_supervised!({ChanEx, name: "test1"})
     end
 
     test "start_link without name" do
