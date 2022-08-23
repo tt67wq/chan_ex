@@ -34,16 +34,16 @@ iex> ChanEx.bpop(chan)
 "ops"
 ```
 
-## Config
+## Customize
 ChanEx depends on Queue implementation for both data and waiter, you can configure your own queue implentation via:
 
 ```elixir
 config :chan_ex, 
-  data_queue_impl: YourQueueImpl,
-  waiter_queue_impl: YourQueueImpl
+  data_queue_impl: YourDataQueueImpl,
+  waiter_queue_impl: YourWaiterQueueImpl
 ```
 
-Your implementation must the obey the follow behavior:
+Your implementation must the obey the following behavior:
 
 ```elixir
 defmodule ChanEx.QueueImpl do
@@ -68,6 +68,6 @@ defmodule ChanEx.QueueImpl do
     @callback to_list(queue()) :: list()
   end
 end
-
-
 ```
+
+You can event make this channel distributed by implementation using third-part storage like Redis.
