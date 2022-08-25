@@ -43,31 +43,35 @@ config :chan_ex,
   waiter_queue_impl: YourWaiterQueueImpl
 ```
 
-Your implementation must the obey the following behavior:
+Your implementation must the obey the following protocols:
 
 ```elixir
-defmodule ChanEx.QueueImpl do
+defprotocol ChanEx.DataQueue do
   @moduledoc false
 
-  @type t :: term()
-  defmodule Data do
-    @type queue :: ChanEx.QueueImpl.t()
+  @spec insert(t(), term()) :: t()
+  def insert(q, item)
 
-    @callback new(keyword()) :: queue()
-    @callback insert(queue(), term()) :: queue()
-    @callback pop(queue()) :: {:ok, {term(), queue()}} | {:error, :empty}
-  end
-
-  defmodule Waiter do
-    @type queue :: ChanEx.QueueImpl.t()
-
-    @callback new(keyword()) :: queue()
-    @callback empty?(queue()) :: boolean()
-    @callback insert(queue(), term()) :: queue()
-    @callback pop(queue()) :: {:ok, {term(), queue()}} | {:error, :empty}
-    @callback to_list(queue()) :: list()
-  end
+  @spec pop(t()) :: {:ok, {term(), t()}} | {:error, :empty}
+  def pop(q)
 end
+
+defprotocol ChanEx.WaiterQueue do
+  @moduledoc false
+
+  @spec insert(t(), term()) :: t()
+  def insert(q, item)
+
+  @spec pop(t()) :: {:ok, {term(), t()}} | {:error, :empty}
+  def pop(q)
+
+  @spec empty?(t()) :: boolean()
+  def empty?(q)
+
+  @spec to_list(t()) :: list()
+  def to_list(q)
+end
+
 ```
 
 You can event make this channel distributed by implementation using third-part storage like Redis.
