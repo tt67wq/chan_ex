@@ -2,6 +2,7 @@ defmodule ChanEx.ErlangQueue do
   @moduledoc """
   wrap erlang's :queue
   """
+  @behaviour ChanEx.Queue
 
   @type t :: %__MODULE__{}
 

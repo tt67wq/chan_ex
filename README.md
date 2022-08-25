@@ -43,9 +43,17 @@ config :chan_ex,
   waiter_queue_impl: YourWaiterQueueImpl
 ```
 
-Your implementation must the obey the following protocols:
+Your implementation must the obey the following protocols and behaviour:
 
 ```elixir
+defmodule ChanEx.Queue do
+  @moduledoc """
+  queue behavior
+  """
+
+  @callback new(keyword()) :: any()
+end
+
 defprotocol ChanEx.DataQueue do
   @moduledoc false
 

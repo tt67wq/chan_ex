@@ -1,3 +1,11 @@
+defmodule ChanEx.Queue do
+  @moduledoc """
+  queue behavior
+  """
+
+  @callback new(keyword()) :: any()
+end
+
 defprotocol ChanEx.DataQueue do
   @moduledoc false
 
