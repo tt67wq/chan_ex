@@ -20,28 +20,16 @@ defmodule ChanExTest do
     end
   end
 
-  describe "new_chan" do
-    test "new_chan with string name", %{name: name} do
-      start_supervised!({ChanEx, name: name})
-      assert {:ok, _} = ChanEx.new_chan(name, "test", 120)
-    end
-
-    test "new_chan with atom name", %{name: name} do
-      start_supervised!({ChanEx, name: name})
-      assert {:ok, _} = ChanEx.new_chan(name, :test_chan, 120)
-    end
-  end
-
   describe "get_chan" do
     test "get_chan without creation", %{name: name} do
       start_supervised!({ChanEx, name: name})
-      assert {:ok, _} = ChanEx.get_chan(name, "test", 120)
+      assert {:ok, _} = ChanEx.get_chan(name, "test")
     end
 
     test "get existing chan", %{name: name} do
       start_supervised!({ChanEx, name: name})
-      {:ok, c1} = ChanEx.new_chan(name, "test", 120)
-      {:ok, c2} = ChanEx.get_chan(name, "test", 120)
+      {:ok, c1} = ChanEx.get_chan(name, "test")
+      {:ok, c2} = ChanEx.get_chan(name, "test")
       assert c1 == c2
     end
   end
@@ -49,7 +37,7 @@ defmodule ChanExTest do
   describe "block queue" do
     test "bpush", %{name: name} do
       start_supervised!({ChanEx, name: name})
-      {:ok, c} = ChanEx.new_chan(name, "test", 2)
+      {:ok, c} = ChanEx.get_chan(name, "test", capacity: 2)
       assert :ok == ChanEx.bpush(c, 1)
       assert :ok == ChanEx.bpush(c, 2)
       assert :block == GenServer.call(c, {:bpush, 3}, 5000)
@@ -57,7 +45,7 @@ defmodule ChanExTest do
 
     test "push", %{name: name} do
       start_supervised!({ChanEx, name: name})
-      {:ok, c} = ChanEx.new_chan(name, "test", 2)
+      {:ok, c} = ChanEx.get_chan(name, "test", capacity: 2)
       assert :ok == ChanEx.push(c, 1)
       assert :ok == ChanEx.push(c, 2)
       assert {:error, _} = ChanEx.push(c, 3)
@@ -66,7 +54,7 @@ defmodule ChanExTest do
 
     test "bpop", %{name: name} do
       start_supervised!({ChanEx, name: name})
-      {:ok, c} = ChanEx.new_chan(name, "test", 2)
+      {:ok, c} = ChanEx.get_chan(name, "test")
       assert :ok == ChanEx.bpush(c, 1)
       assert 1 == ChanEx.bpop(c)
       assert :block == GenServer.call(c, :bpop, 5000)
@@ -74,7 +62,7 @@ defmodule ChanExTest do
 
     test "pop", %{name: name} do
       start_supervised!({ChanEx, name: name})
-      {:ok, c} = ChanEx.new_chan(name, "test", 2)
+      {:ok, c} = ChanEx.get_chan(name, "test")
       assert :ok == ChanEx.push(c, 1)
       assert 1 == ChanEx.pop(c)
       assert {:error, :empty} == ChanEx.pop(c)

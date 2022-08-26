@@ -7,7 +7,7 @@ defmodule ChanEx do
 
   use Supervisor
 
-  @opt_schema [
+  @main_opt_schema [
     name: [
       type: {:or, [:atom, :string]},
       default: __MODULE__,
@@ -16,16 +16,24 @@ defmodule ChanEx do
   ]
 
   @default_chan_capacity 256
+  @chan_opt_schema [
+    capacity: [
+      type: :non_neg_integer,
+      default: @default_chan_capacity,
+      doc:
+        "capcacity of this channel, if element numbers reaches capacity, push operation will be blocked"
+    ]
+  ]
 
   @spec start_link(keyword) :: :ignore | {:error, any} | {:ok, pid}
   @doc """
   start a new channel manager
 
   ## Options
-  #{NimbleOptions.docs(@opt_schema)}
+  #{NimbleOptions.docs(@main_opt_schema)}
   """
   def start_link(opts) do
-    opts = NimbleOptions.validate!(opts, @opt_schema)
+    opts = NimbleOptions.validate!(opts, @main_opt_schema)
     name = opts[:name]
 
     cfg = [
@@ -51,19 +59,24 @@ defmodule ChanEx do
 
   @type chan_name_t :: String.t() | atom()
 
-  @spec new_chan(atom(), chan_name_t(), non_neg_integer) ::
+  @spec new_chan(atom, chan_name_t(), keyword) ::
           {:error, any} | {:ok, pid}
-  def new_chan(manager_name, name, capacity \\ @default_chan_capacity) do
+  defp new_chan(manager_name, name, opts) do
+    opts =
+      opts
+      |> NimbleOptions.validate!(@chan_opt_schema)
+      |> Keyword.put(:name, chan_name(manager_name, name))
+
     DynamicSupervisor.start_child(
       dynamic_supervisor_name(manager_name),
-      {ChanEx.BlockChan, capacity: capacity, name: chan_name(manager_name, name)}
+      {ChanEx.BlockChan, opts}
     )
   end
 
-  @spec get_chan(atom, chan_name_t(), any) :: {:error, any} | {:ok, pid}
-  def get_chan(manager_name, name, capacity \\ @default_chan_capacity) do
+  @spec get_chan(atom, chan_name_t(), keyword) :: {:error, any} | {:ok, pid}
+  def get_chan(manager_name, name, opts \\ []) do
     case lookup_chan(manager_name, name) do
-      nil -> new_chan(manager_name, name, capacity)
+      nil -> new_chan(manager_name, name, opts)
       {:ok, pid} -> {:ok, pid}
     end
   end
