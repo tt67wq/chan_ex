@@ -2,8 +2,9 @@ defmodule ChanEx.Queue do
   @moduledoc """
   queue behavior
   """
+  alias ChanEx.{DataQueue, WaiterQueue}
 
-  @callback new(keyword()) :: any()
+  @callback new(keyword()) :: DataQueue.t() | WaiterQueue.t()
 end
 
 defprotocol ChanEx.DataQueue do
