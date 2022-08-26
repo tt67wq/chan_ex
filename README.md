@@ -81,5 +81,7 @@ defprotocol ChanEx.WaiterQueue do
 end
 
 ```
-
 You can event make this channel distributed by implementation using third-part storage like Redis.
+
+## Examples
+You can see more exmaples [here](https://github.com/tt67wq/chan_ex/tree/master/examples)
