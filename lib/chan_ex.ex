@@ -57,42 +57,55 @@ defmodule ChanEx do
     Supervisor.init(children, strategy: :one_for_all)
   end
 
+  @typedoc """
+  chan_name_t could be string or atom
+  """
   @type chan_name_t :: String.t() | atom()
 
-  @spec new_chan(atom, chan_name_t(), keyword) ::
-          {:error, any} | {:ok, pid}
-  defp new_chan(manager_name, name, opts) do
-    opts =
-      opts
-      |> NimbleOptions.validate!(@chan_opt_schema)
-      |> Keyword.put(:name, chan_name(manager_name, name))
-
-    DynamicSupervisor.start_child(
-      dynamic_supervisor_name(manager_name),
-      {ChanEx.BlockChan, opts}
-    )
-  end
-
   @spec get_chan(atom, chan_name_t(), keyword) :: {:error, any} | {:ok, pid}
-  def get_chan(manager_name, name, opts \\ []) do
-    case lookup_chan(manager_name, name) do
-      nil -> new_chan(manager_name, name, opts)
+  @doc """
+  get or create a channel
+
+  * `pid`      - process id of chan manager
+  * `name`     - channel name
+  * `opts`     - arg description
+
+  ## Options
+  #{NimbleOptions.docs(@chan_opt_schema)}
+  """
+  def get_chan(pid, name, opts \\ []) do
+    case lookup_chan(pid, name) do
+      nil -> new_chan(pid, name, opts)
       {:ok, pid} -> {:ok, pid}
     end
   end
 
-  defp lookup_chan(manager_name, name) do
-    manager_name
+  @spec new_chan(atom, chan_name_t(), keyword) ::
+          {:error, any} | {:ok, pid}
+  defp new_chan(pid, name, opts) do
+    opts =
+      opts
+      |> NimbleOptions.validate!(@chan_opt_schema)
+      |> Keyword.put(:name, chan_name(pid, name))
+
+    DynamicSupervisor.start_child(
+      dynamic_supervisor_name(pid),
+      {ChanEx.BlockChan, opts}
+    )
+  end
+
+  defp lookup_chan(pid, name) do
+    pid
     |> registry_name()
     |> Registry.lookup(name)
     |> case do
       [] -> nil
-      [{pid, _}] -> {:ok, pid}
+      [{chan_pid, _}] -> {:ok, chan_pid}
     end
   end
 
-  defp chan_name(manager_name, name),
-    do: {:via, Registry, {registry_name(manager_name), name}}
+  defp chan_name(pid, name),
+    do: {:via, Registry, {registry_name(pid), name}}
 
   defdelegate bpush(pid, item, timeout \\ 5000), to: ChanEx.BlockChan
   defdelegate push(pid, item, timeout \\ 5000), to: ChanEx.BlockChan
